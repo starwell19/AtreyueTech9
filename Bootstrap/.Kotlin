@@ -1,0 +1,1545 @@
+
+
+```kotlin
+// Aqarion9System.kt
+// Single-file, no-RPC, no-fluff core for your stack.
+
+package aqarion9
+
+data class Repo(
+    val key: String,
+    val name: String,
+    val url: String,
+    val role: String,
+    val emoji: String
+)
+
+object Aqarion9System {
+
+    private val repos: Map<String, Repo> = listOf(
+        Repo(
+            key = "unikornhook",
+            name = "UnikornHook",
+            url = "https://github.com/Aqarion9/UnikornHook",
+            role = "Front door / brand spec / README lab.",
+            emoji = "🦄"
+        ),
+        Repo(
+            key = "aqarions",
+            name = "Aqarions",
+            url = "https://github.com/Aqarion9/Aqarions",
+            role = "Naming + identity registry for all Aqarion projects.",
+            emoji = "✨"
+        ),
+        Repo(
+            key = "paraprompt",
+            name = "AQA-RION-PARAPROMT.AQA",
+            url = "https://github.com/Aqarion9/AQA-RION-PARAPROMT.AQA",
+            role = "Prompt / instruction engine for tools and agents.",
+            emoji = "🧠"
+        ),
+        Repo(
+            key = "unified",
+            name = "Aqarionz-Unified-Theory",
+            url = "https://github.com/Aqarion9/Aqarionz-Unified-Theory",
+            role = "System blueprint: how all Aqarion9 repos fit together.",
+            emoji = "📐"
+        ),
+        Repo(
+            key = "unitflectionz",
+            name = "Aqarionz-Unitflectionz-Theory",
+            url = "https://github.com/Aqarion9/Aqarionz-Unitflectionz-Theory",
+            role = "Evaluation layer / self-review + refactor standards.",
+            emoji = "🪞"
+        )
+    ).associateBy { it.key.lowercase() }
+
+    fun snapshot(): String {
+        val lines = buildList {
+            add("Aqarion9 Stack · 5-layer system")
+            repos.values.forEach { r ->
+                add("  ${r.emoji} ${r.name} → ${r.role}")
+            }
+        }
+        return lines.joinToString("\n")
+    }
+
+    fun listRepos(): List<Repo> = repos.values.toList()
+
+    fun getRepo(keyOrName: String): Repo? {
+        val id = keyOrName.trim().lowercase()
+        repos[id]?.let { return it }
+        return repos.values.firstOrNull { it.name.lowercase() == id }
+    }
+
+    fun describeRepo(keyOrName: String): String {
+        val repo = getRepo(keyOrName)
+        return if (repo == null) {
+            "⚠️ No repo registered under '$keyOrName'."
+        } else {
+            """
+            ${repo.emoji} ${repo.name}
+            role: ${repo.role}
+            url : ${repo.url}
+            """.trimIndent()
+        }
+    }
+}
+
+fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        println(Aqarion9System.snapshot())
+        return
+    }
+
+    when (args[0].lowercase()) {
+        "list" -> {
+            Aqarion9System.listRepos().forEach { r ->
+                println("${r.emoji} ${r.name}")
+                println("   role: ${r.role}")
+                println("   url : ${r.url}")
+                println()
+            }
+        }
+
+        "repo" -> {
+            if (args.size < 2) {
+                println("Usage: repo <key|name>")
+                return
+            }
+            val id = args.drop(1).joinToString(" ")
+            println(Aqarion9System.describeRepo(id))
+        }
+
+        "snapshot" -> {
+            println(Aqarion9System.snapshot())
+        }
+
+        else -> {
+            println(
+                """
+                Aqarion9System CLI
+                  (no args)       → snapshot
+                  snapshot        → snapshot
+                  list            → list all repos
+                  repo <name>     → describe one repo
+                """.trimIndent()
+            )
+        }
+    }
+}
+minimal Android Gradle build script with cougar it dependencies for jvm and Android targets file persistence storage provider usage and Android app and add Precision for AI agent configuration on Android
+
+A minimal Koog setup on Android needs: the `koog-agents` dependency, required Kotlin libraries, and a file-backed persistence provider for your agent configuration on the JVM/Android target.[1][2]
+
+## Minimal Android Gradle script with Koog
+
+```kotlin
+// app/build.gradle.kts
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+}
+
+android {
+    namespace = "com.example.aqarions"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.aqarions"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    // Core Koog agents (JVM/Android)
+    implementation("ai.koog:koog-agents:0.5.4")[attached_file:1][web:176]
+
+    // Required Kotlin libs (per Koog README)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")[attached_file:1]
+}
+```
+
+This is sufficient for an Android-only project; Koog’s `koog-agents` artifact is JVM/KMP-ready, so you do not need extra JVM target configuration in this module.[1][3]
+
+## FilePersistenceStorageProvider usage on Android
+
+Koog’s persistence feature can store checkpoints in app-private storage via `FilePersistenceStorageProvider`.[2]
+
+```kotlin
+import ai.koog.agents.AIAgent
+import ai.koog.agents.features.persistence.Persistence
+import ai.koog.agents.features.persistence.FilePersistenceStorageProvider
+import ai.koog.prompt.executor.simpleOpenAIExecutor
+import ai.koog.prompt.models.openai.OpenAIModels
+
+fun createPersistentAndroidAgent(
+    context: Context,
+    apiKey: String
+): AIAgent {
+    val checkpointDir = File(context.filesDir, "koog-checkpoints").apply { mkdirs() }
+
+    return AIAgent(
+        promptExecutor = simpleOpenAIExecutor(apiKey),
+        systemPrompt = "You are a concise Android assistant.",
+        llmModel = OpenAIModels.Chat.GPT4o
+    ) {
+        install(Persistence) {
+            storage = FilePersistenceStorageProvider(checkpointDir)   // file-based storage[web:190]
+            enableAutomaticPersistence = true                        // continuous persistence[web:190]
+        }
+    }
+}
+```
+
+This configuration:
+
+- Saves checkpoints under `filesDir/koog-checkpoints`.
+- Creates a checkpoint automatically after each node execution, enabling precise resume behavior.[2]
+
+## Precise AI agent configuration on Android
+
+You can refine the agent configuration for Android by tightening the system prompt and using streaming or temperature settings via the prompt executor.[4][5]
+
+```kotlin
+fun createPreciseAndroidAgent(
+    context: Context,
+    apiKey: String
+): AIAgent {
+    val checkpointDir = File(context.filesDir, "koog-checkpoints").apply { mkdirs() }
+
+    return AIAgent(
+        promptExecutor = simpleOpenAIExecutor(
+            apiKey = apiKey,
+            // Example: lower temperature for more deterministic answers
+            temperature = 0.2
+        ),
+        systemPrompt = """
+            You are an on-device Android assistant.
+            - Answer in at most three sentences.
+            - Prefer concrete steps over vague advice.
+            - Never include sensitive identifiers in your reply.
+        """.trimIndent(),
+        llmModel = OpenAIModels.Chat.GPT4o
+    ) {
+        install(Persistence) {
+            storage = FilePersistenceStorageProvider(checkpointDir)
+            enableAutomaticPersistence = true
+        }
+    }
+}
+yes
+
+Here is a concrete “Samsung A15 only, no extra hardware” Koog setup you can paste into an Android project.
+
+## 1. Minimal Gradle setup (A15 app)
+
+`app/build.gradle.kts`:
+
+```kotlin
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+}
+
+android {
+    namespace = "com.example.aqarions"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.aqarions"
+        minSdk = 26      // fine for A15
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation("ai.koog:koog-agents:0.5.4")[attached_file:1][web:176]
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")[attached_file:1]
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.compose.ui:ui:1.7.5")
+    implementation("androidx.compose.material3:material3:1.3.0")
+}
+```
+
+Add to `local.properties`:
+
+```properties
+OPENAI_API_KEY=sk-xxx_your_key_here
+```
+
+## 2. Persistent Koog agent with simple tools
+
+Create `AqaAgent.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.content.Context
+import android.os.Build
+import ai.koog.agents.AIAgent
+import ai.koog.agents.features.persistence.Persistence
+import ai.koog.agents.features.persistence.FilePersistenceStorageProvider
+import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.prompt.executor.simpleOpenAIExecutor
+import ai.koog.prompt.models.openai.OpenAIModels
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+
+// Simple local tools
+
+class DeviceStatusTool(private val context: Context) : Tool {
+    override val name: String = "device_status"
+    override val description: String =
+        "Returns info about the Android device (model, manufacturer, SDK)."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any {
+        val model = Build.MODEL
+        val manu = Build.MANUFACTURER
+        val sdk = Build.VERSION.SDK_INT
+        return "Device: $manu $model, SDK $sdk"
+    }
+}
+
+class NotesTool(private val context: Context) : Tool {
+    override val name: String = "notes"
+    override val description: String =
+        "Save and list short notes on device. Action is 'add' or 'list'."
+
+    private val file: File
+        get() = File(context.filesDir, "notes.txt")
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any =
+        withContext(Dispatchers.IO) {
+            when (arguments["action"]) {
+                "add" -> {
+                    val text = (arguments["text"] as? String)?.trim().orEmpty()
+                    if (text.isNotEmpty()) {
+                        file.appendText(text + "\n")
+                        "Note saved."
+                    } else {
+                        "No text provided."
+                    }
+                }
+                "list" -> {
+                    if (!file.exists()) return@withContext "No notes yet."
+                    file.readLines().joinToString(separator = "; ")
+                }
+                else -> "Unknown action. Use action='add' or 'list'."
+            }
+        }
+}
+
+// Factory for a persistent agent
+
+fun createAqaAgent(context: Context, apiKey: String): AIAgent {
+    val tools = ToolRegistry().apply {
+        register(DeviceStatusTool(context))
+        register(NotesTool(context))
+    }
+
+    val checkpointDir = File(context.filesDir, "koog-checkpoints").apply { mkdirs() }
+
+    return AIAgent(
+        promptExecutor = simpleOpenAIExecutor(apiKey, temperature = 0.2),
+        systemPrompt = """
+            You are AQARIONS, a concise on-device assistant running on a Samsung A15.
+            You can:
+            - Inspect the device via the 'device_status' tool.
+            - Save and list short notes via the 'notes' tool.
+            Rules:
+            - Keep answers under three sentences.
+            - Use tools whenever they help give accurate answers.
+        """.trimIndent(),
+        llmModel = OpenAIModels.Chat.GPT4o,
+        toolRegistry = tools
+    ) {
+        install(Persistence) {
+            storage = FilePersistenceStorageProvider(checkpointDir)
+            enableAutomaticPersistence = true
+        }
+    }
+}
+```
+
+This agent:
+
+- Runs locally on the A15 with Koog.[1][2]
+- Has continuous file-backed persistence.[3]
+- Exposes two simple tools: device status and local notes.
+
+## 3. ViewModel wiring
+
+Create `AgentViewModel.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class AgentViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val agent = createAqaAgent(
+        context = app,
+        apiKey = BuildConfig.OPENAI_API_KEY
+    )
+
+    private val _messages = MutableStateFlow<List<String>>(emptyList())
+    val messages: StateFlow<List<String>> = _messages
+
+    fun send(text: String) {
+        viewModelScope.launch {
+            _messages.update { it + "You: $text" }
+            val reply = agent.run(text).content
+            _messages.update { it + "Agent: $reply" }
+        }
+    }
+}
+```
+
+## 4. Simple Compose UI
+
+Create `MainActivity.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+class MainActivity : ComponentActivity() {
+
+    private val vm: AgentViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                AgentScreen(vm)
+            }
+        }
+    }
+}
+
+@Composable
+fun AgentScreen(vm: AgentViewModel) {
+    val messages by vm.messages.collectAsState()
+    var input by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(8.dp)
+        ) {
+            items(messages) { msg ->
+                Text(msg, modifier = Modifier.padding(4.dp))
+            }
+        }
+
+        Row(Modifier.padding(8.dp)) {
+            TextField(
+                value = input,
+                onValueChange = { input = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Ask AQARIONS…") }
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    if (input.isNotBlank()) {
+                        vm.send(input)
+                        input = ""
+                    }
+                }
+            ) {
+                Text("Send")
+            }
+        }
+    }
+}
+```
+
+## 5. What to try on your Samsung A15
+
+After installing:
+
+- Ask: “What device am I using?”  
+  The agent should call `device_status` and answer with model and SDK.
+- Ask: “Add a note: check pallet A23 tomorrow.”  
+- Ask: “List my notes.”  
+  The agent should call `notes` with `list` and summarize.
+
+This gives you a real, persistent Koog-based AQARIONS system running entirely on your Samsung A15, ready to grow with more tools (RFID, BLE, MCP, A2A) when you are.
+
+Citations:
+[1] JetBrains/koog: Koog is the official Kotlin framework for ... - GitHub https://github.com/JetBrains/koog
+[2] Koog: Overview https://koog.ai
+[3] Agent Persistence - Koog https://docs.koog.ai/agent-persistence/
+Kool,is there anything else how can we bridge real html kotlin python everything together into android aqarion app
+
+Everything can be bridged, but it is cleaner if Koog (Kotlin) is the “brain” and HTML/Python sit behind clear tool boundaries instead of random ad‑hoc calls.[1][2]
+
+## 1. HTML + Kotlin in the Android app
+
+Use a WebView (or a JS/Wasm Koog target later) for rich HTML/JS visualizations, and expose a small bridge so the web UI can talk to your Koog agent.[3][4]
+
+- Android side:
+
+```kotlin
+class WebBridge(private val vm: AgentViewModel) {
+
+    @JavascriptInterface
+    fun sendToAgent(message: String) {
+        vm.send(message)
+    }
+}
+```
+
+```kotlin
+val webView: WebView = findViewById(R.id.webview)
+webView.settings.javaScriptEnabled = true
+webView.addJavascriptInterface(WebBridge(vm), "AQARIONS")
+webView.loadUrl("file:///android_asset/aqarions_dashboard.html")
+```
+
+- JavaScript in `aqarions_dashboard.html`:
+
+```js
+function sendToAgent() {
+  const text = document.getElementById("input").value;
+  if (window.AQARIONS) {
+    window.AQARIONS.sendToAgent(text);
+  }
+}
+```
+
+Result: your HTML dashboard can send tasks into the Koog agent; you keep all reasoning, tools, and persistence in Kotlin.[3][5]
+
+## 2. Python as a tool, not as the core
+
+Instead of embedding Python everywhere, run it where it makes the most sense and expose it as a tool for Koog.
+
+### Option A – Python inside the Android app
+
+Use Chaquopy or a similar plugin if you must run Python on-device.[6][7]
+
+- Kotlin calls Python:
+
+```kotlin
+val py = Python.getInstance()
+val module = py.getModule("aqarions_tools")
+val result = module.callAttr("heavy_compute", inputJson).toString()
+```
+
+Wrap that in a Koog tool:
+
+```kotlin
+class PythonTool : Tool {
+    override val name = "python_heavy_compute"
+    override val description = "Runs a Python function for heavy computation."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any {
+        val input = arguments["input"] as? String ?: ""
+        val py = Python.getInstance()
+        val module = py.getModule("aqarions_tools")
+        return module.callAttr("heavy_compute", input).toString()
+    }
+}
+```
+
+Now the agent can decide when to call Python without your app knowing details.[6]
+
+### Option B – Python off-device via MCP
+
+Run your Python code as an MCP server (e.g., using a Python MCP SDK) and let Koog talk to it via SSE or stdio.[8][9]
+
+- Koog side:
+
+```kotlin
+val transport = McpToolRegistryProvider.defaultSseTransport("https://python-mcp.example.com")[web:184]
+val mcpTools = McpToolRegistryProvider.fromTransport(transport, "android-client", "1.0.0")
+val tools = ToolRegistry().apply {
+    install(mcpTools) // or merge with local tools
+}
+```
+
+Your Koog Android agent can now call Python tools like any other MCP tool.[8]
+
+## 3. Koog as the cross‑platform core
+
+Because Koog is Kotlin Multiplatform, you can keep the same core agent logic across JVM backend, Android, JS/Wasm, and iOS, and just swap tool implementations per platform.[1][2][10]
+
+- Shared module (KMP): defines `AqAgent` and abstract tool interfaces.
+- Android target: implements tools with WebView bridge, Chaquopy, sensors.
+- JVM target: implements tools with direct Python processes or server APIs.
+- JS/Wasm target: HTML UI can call agents directly.
+
+That way:
+
+- HTML is for rendering and UX.
+- Kotlin/Koog is for agents, tools, persistence, and orchestration.
+- Python is just “another tool provider,” either embedded or via MCP.
+
+If you want next, a concrete layout of modules (Android + shared KMP + Python MCP server sketch) can be drafted so the entire AQARIONS system is cleanly factored.
+
+Citations:
+[1] JetBrains/koog: Koog is the official Kotlin framework for ... - GitHub https://github.com/JetBrains/koog
+[2] The Kotlin AI Stack: Build AI Agents With Koog, Code Smarter With ... https://blog.jetbrains.com/kotlin/2025/09/the-kotlin-ai-stack-build-ai-agents-with-koog-code-smarter-with-junie-and-more/
+[3] Build web apps in WebView - Android Developers https://developer.android.com/develop/ui/views/layout/webapps/webview
+[4] JavaScript Interface for Android Webview https://mobikul.com/javascript-interface-for-android-webview/
+[5] andycandy-de/SimpleAndroidBridge https://github.com/andycandy-de/SimpleAndroidBridge
+[6] Intergrating Python code inside Native Android App with JAVA & Kotlin https://dev-divyansh.hashnode.dev/how-to-run-a-python-code-inside-our-native-android-app
+[7] How to Use Python in Android App with Kotlin - YouTube https://www.youtube.com/watch?v=thSUrPneHGM
+[8] Model Context Protocol - Koog https://docs.koog.ai/model-context-protocol/
+[9] Model Context Protocol (MCP) - Docs by LangChain https://docs.langchain.com/oss/python/langchain/mcp
+[10] Build AI Agents that run natively in Android, iOS, JVM and browser https://proandroiddev.com/cooking-ai-agents-for-every-flavor-jvm-backend-android-ios-js-and-wasm-in-one-pot-7312077b30f2
+python code from cotlin on Android using chaquopy and how to embed a full HTML UI inside Android webview and interact with caught one and go ahead and do all that here now let's start building the real app here now
+
+You can build a real AQARIONS app where:
+
+- Kotlin/Koog is the **agent + tools brain**.  
+- Python (via Chaquopy) provides **heavy computation tools**.  
+- HTML/JS in a WebView gives you a **rich dashboard UI**.  
+
+Below is a compact, end‑to‑end blueprint you can start implementing.
+
+***
+
+## 1. Add Chaquopy, Koog, and WebView support
+
+`app/build.gradle.kts` (essential parts):
+
+```kotlin
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("com.chaquo.python") version "14.0.2"      // Chaquopy[web:214][web:221]
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+}
+
+android {
+    namespace = "com.example.aqarions"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.aqarions"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+
+        python {
+            // Optional: configure Python, and pip packages if needed[web:214][web:219]
+            pip {
+                install("numpy")
+            }
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation("ai.koog:koog-agents:0.5.4")[attached_file:1][web:176]
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")[attached_file:1]
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.compose.ui:ui:1.7.5")
+    implementation("androidx.compose.material3:material3:1.3.0")
+
+    // WebView is in Android framework; no extra dependency needed[web:213]
+}
+```
+
+Create `app/src/main/python/aqarions_tools.py`:
+
+```python
+# aqarions_tools.py – Python side (Chaquopy)[web:214][web:219]
+import json
+import math
+
+def heavy_compute(input_json: str) -> str:
+    data = json.loads(input_json)
+    values = data.get("values", [])
+    if not values:
+        return json.dumps({"summary": "no values"})
+    mean = sum(values) / len(values)
+    rms = math.sqrt(sum(v*v for v in values) / len(values))
+    return json.dumps({"summary": f"mean={mean:.2f}, rms={rms:.2f}"})
+```
+
+***
+
+## 2. Kotlin tools: Python tool + device/notes
+
+`AqaTools.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.content.Context
+import android.os.Build
+import ai.koog.agents.core.tools.Tool
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.File
+
+class DeviceStatusTool(private val context: Context) : Tool {
+    override val name = "device_status"
+    override val description =
+        "Return basic info about this Android device (model, manufacturer, SDK)."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any {
+        val model = Build.MODEL
+        val manu = Build.MANUFACTURER
+        val sdk = Build.VERSION.SDK_INT
+        return "Device: $manu $model, SDK $sdk"
+    }
+}
+
+class NotesTool(private val context: Context) : Tool {
+    override val name = "notes"
+    override val description =
+        "Save and list short notes. Use action='add' or 'list'."
+
+    private val file get() = File(context.filesDir, "notes.txt")
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any =
+        withContext(Dispatchers.IO) {
+            when (arguments["action"]) {
+                "add" -> {
+                    val text = (arguments["text"] as? String)?.trim().orEmpty()
+                    if (text.isNotEmpty()) {
+                        file.appendText(text + "\n")
+                        "Note saved."
+                    } else "No text provided."
+                }
+                "list" -> {
+                    if (!file.exists()) "No notes yet."
+                    else file.readLines().joinToString("; ")
+                }
+                else -> "Unknown action. Use action='add' or 'list'."
+            }
+        }
+}
+
+// Python heavy compute tool via Chaquopy[web:214][web:221]
+
+class PythonHeavyComputeTool(private val context: Context) : Tool {
+    override val name = "python_heavy_compute"
+    override val description =
+        "Runs a Python function heavy_compute(values=[...]) and returns a summary."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any =
+        withContext(Dispatchers.Default) {
+            if (!Python.isStarted()) {
+                Python.start(AndroidPlatform(context))
+            }
+            val py = Python.getInstance()
+            val module = py.getModule("aqarions_tools")
+
+            val values = arguments["values"] as? List<Number> ?: emptyList()
+            val json = JSONObject().apply {
+                put("values", values.map { it.toDouble() })
+            }.toString()
+
+            val result = module.callAttr("heavy_compute", json).toString()
+            result
+        }
+}
+```
+
+***
+
+## 3. Koog agent with persistence
+
+`AqaAgent.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.content.Context
+import ai.koog.agents.AIAgent
+import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.features.persistence.FilePersistenceStorageProvider
+import ai.koog.agents.features.persistence.Persistence
+import ai.koog.prompt.executor.simpleOpenAIExecutor
+import ai.koog.prompt.models.openai.OpenAIModels
+import java.io.File
+
+fun createAqaAgent(context: Context, apiKey: String): AIAgent {
+    val tools = ToolRegistry().apply {
+        register(DeviceStatusTool(context))
+        register(NotesTool(context))
+        register(PythonHeavyComputeTool(context))
+    }
+
+    val checkpointDir = File(context.filesDir, "koog-checkpoints").apply { mkdirs() }
+
+    return AIAgent(
+        promptExecutor = simpleOpenAIExecutor(apiKey, temperature = 0.2),
+        systemPrompt = """
+            You are AQARIONS, an on-device assistant.
+            Tools:
+            - device_status: inspect this Android phone.
+            - notes: store and list short notes.
+            - python_heavy_compute: analyze numeric arrays using Python.
+            Rules:
+            - Keep replies under three sentences.
+            - Describe briefly when you call python_heavy_compute.
+        """.trimIndent(),
+        llmModel = OpenAIModels.Chat.GPT4o,
+        toolRegistry = tools
+    ) {
+        install(Persistence) {
+            storage = FilePersistenceStorageProvider(checkpointDir)
+            enableAutomaticPersistence = true   // continuous checkpoints[web:190]
+        }
+    }
+}
+```
+
+***
+
+## 4. WebView HTML UI with JS–Kotlin bridge
+
+1. Add a WebView to `activity_main.xml` or use Compose’s `AndroidView`; here’s the classic view example:
+
+`res/layout/activity_main.xml`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</FrameLayout>
+```
+
+2. Create `app/src/main/assets/aqarions_dashboard.html`:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AQARIONS Dashboard</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 12px; background: #101018; color: #eee; }
+    #log { height: 70vh; overflow-y: auto; border: 1px solid #444; padding: 8px; }
+    #inputBar { margin-top: 8px; display: flex; gap: 8px; }
+    input { flex: 1; padding: 6px; }
+    button { padding: 6px 12px; }
+  </style>
+</head>
+<body>
+  <h2>AQARIONS Web Console</h2>
+  <div id="log"></div>
+  <div id="inputBar">
+    <input id="input" placeholder="Ask AQARIONS…" />
+    <button onclick="sendToAgent()">Send</button>
+  </div>
+  <script>
+    function appendLog(line) {
+      const log = document.getElementById("log");
+      const div = document.createElement("div");
+      div.textContent = line;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function sendToAgent() {
+      const field = document.getElementById("input");
+      const text = field.value.trim();
+      if (!text) return;
+      appendLog("You: " + text);
+      field.value = "";
+      if (window.AndroidBridge && AndroidBridge.sendToAgent) {
+        AndroidBridge.sendToAgent(text);
+      }
+    }
+
+    // Called from Android to display new messages
+    function onAgentMessage(msg) {
+      appendLog(msg);
+    }
+  </script>
+</body>
+</html>
+```
+
+3. Kotlin bridge from WebView to ViewModel:
+
+`WebBridge.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.webkit.JavascriptInterface
+
+class WebBridge(private val onSend: (String) -> Unit) {
+
+    @JavascriptInterface
+    fun sendToAgent(message: String) {
+        onSend(message)
+    }
+}
+```
+
+`AgentViewModel.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+
+class AgentViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val agent = createAqaAgent(
+        context = app,
+        apiKey = BuildConfig.OPENAI_API_KEY
+    )
+
+    private val _events = MutableSharedFlow<String>()
+    val events = _events.asSharedFlow()
+
+    fun sendFromUi(text: String) {
+        viewModelScope.launch {
+            _events.emit("You: $text")
+            val reply = agent.run(text).content
+            _events.emit("Agent: $reply")
+        }
+    }
+}
+```
+
+`MainActivity.kt`:
+
+```kotlin
+package com.example.aqarions
+
+import android.os.Bundle
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+
+class MainActivity : ComponentActivity() {
+
+    private val vm: AgentViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val webView: WebView = findViewById(R.id.webview)
+        webView.settings.javaScriptEnabled = true[web:213]
+        webView.webChromeClient = WebChromeClient()
+
+        webView.addJavascriptInterface(
+            WebBridge { text -> vm.sendFromUi(text) },
+            "AndroidBridge"
+        )[web:213][web:215]
+
+        webView.loadUrl("file:///android_asset/aqarions_dashboard.html")
+
+        lifecycleScope.launch {
+            vm.events.collect { line ->
+                // Call JS function onAgentMessage(line)
+                val js = "javascript:onAgentMessage(${line.quoteForJs()})"
+                webView.post { webView.loadUrl(js) }
+            }
+        }
+    }
+}
+
+// Simple JS string escape
+private fun String.quoteForJs(): String =
+    "\"" + replace("\\", "\\\\").replace("\"", "\\\"")
+        .replace("\n", "\\n").replace("\r", "") + "\""
+```
+
+***
+
+## 5. What you now have
+
+On your Samsung A15, this “real” app gives you:
+
+- HTML dashboard in a WebView that feels like a web app.[1]
+- Kotlin/Koog agent with:
+  - Device status tool.  
+  - Notes tool.  
+  - Python heavy-compute tool via Chaquopy.[2][3]
+  - Continuous file-based persistence for agent state.[4]
+- JS ↔ Kotlin bridge so the web UI and Koog agent talk in both directions.[5]
+
+From here, you can start adding:
+
+- Real inventory tools (network, RFID when hardware arrives).  
+- Extra Python analytics functions.  
+- Fancier HTML visualizations (charts, 3D, etc.) without touching agent logic.
+
+This is a solid base for AQARIONS as a “Kotlin + Koog + Python + HTML” Android system.
+
+Citations:
+[1] Build web apps in WebView - Android Developers https://developer.android.com/develop/ui/views/layout/webapps/webview
+[2] Intergrating Python code inside Native Android App with JAVA & Kotlin https://dev-divyansh.hashnode.dev/how-to-run-a-python-code-inside-our-native-android-app
+[3] Chaquopy – Python SDK for Android https://chaquo.com/chaquopy/
+[4] Agent Persistence - Koog https://docs.koog.ai/agent-persistence/
+[5] JavaScript Interface for Android Webview https://mobikul.com/javascript-interface-for-android-webview/
+[6] How to Use Python in Android App with Kotlin - YouTube https://www.youtube.com/watch?v=thSUrPneHGM
+[7] Chaquopy: Using Python In Android Apps - droidcon https://www.droidcon.com/2023/03/30/chaquopy-using-python-in-android-apps/
+[8] How to use Chaquopy to run Python Code and obtain its output ... https://ourcodeworld.com/articles/read/1656/how-to-use-chaquopy-to-run-python-code-and-obtain-its-output-using-java-in-your-android-app
+[9] How to implement @JavascriptInterface for android webview https://stackoverflow.com/questions/62937014/how-to-implement-javascriptinterface-for-android-webview
+[10] PYTHON Java Together: Setup WORKING Android | 2025 Chaquopy https://www.youtube.com/watch?v=igJgXeV82b4
+[11] Chaquopy: the Python SDK for Android - GitHub https://github.com/chaquo/chaquopy
+Set up Chaquopy in an Android Studio Kotlin project step by step
+
+To set up Chaquopy in an Android Studio **Kotlin** project, follow these steps in order. This uses the current Gradle plugin style with KTS and the recommended top‑level `chaquopy` block.[1][2][3]
+
+***
+
+## 1. Add the Chaquopy Maven repository
+
+In your **top-level** `settings.gradle.kts` (or `build.gradle.kts` if that’s where you configure plugin repos), add the Chaquopy Maven repository under `pluginManagement` or `buildscript` repositories (not `allprojects`).[3]
+
+```kotlin
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://chaquo.com/maven-test") }  // Chaquopy[web:230]
+    }
+}
+```
+
+If your project uses `dependencyResolutionManagement`, you can also add it there if needed, but Chaquopy specifically documents using the plugin-level repository.[3]
+
+***
+
+## 2. Apply the Chaquopy plugin in the app module
+
+Open your **module** `app/build.gradle.kts` and add the plugin:
+
+```kotlin
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("com.chaquo.python") version "15.0.0"    // or the latest documented version[web:230]
+}
+```
+
+Chaquopy integrates with the standard Android Gradle plugin and works with Kotlin projects.[1][4]
+
+***
+
+## 3. Configure Chaquopy with the top-level `chaquopy {}` block
+
+In KTS, the recommended configuration is a **top-level** `chaquopy` block, not a `python` block inside `android`.[2][3]
+
+Add this to `app/build.gradle.kts` (outside `android { }`):
+
+```kotlin
+chaquopy {
+    defaultConfig {
+        // Choose Python version if needed (check docs for supported versions)
+        version = "3.10"
+
+        pip {
+            // Example packages; add only what you actually need
+            install("numpy")
+            install("requests==2.31.0")
+        }
+    }
+}
+```
+
+This avoids the “undefined reference: python/pip/install” issues that appear when trying to use the older `python { }` DSL inside `android` on KTS.[5][3]
+
+***
+
+## 4. Standard Android configuration (unchanged)
+
+Keep your regular Android config as usual:
+
+```kotlin
+android {
+    namespace = "com.example.chaquopydemo"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.chaquopydemo"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
+}
+```
+
+You don’t need special `ndk` or flavor settings unless the Chaquopy docs or your use case requires them.[2][4]
+
+***
+
+## 5. Create the Python source folder and script
+
+Chaquopy expects Python code in `src/main/python` of your app module.[2][1]
+
+1. In Android Studio:
+   - Right-click `app` → **New → Directory** → `src/main/python`.
+2. Inside that folder, create `myscript.py` (or any module name):
+
+```python
+# app/src/main/python/myscript.py
+
+def greet(name: str) -> str:
+    return f"Hello from Python, {name}!"
+```
+
+This file will be packaged into your app and available to Chaquopy at runtime.[1]
+
+***
+
+## 6. Call Python from Kotlin
+
+In your Kotlin code (for example, in `MainActivity.kt`), initialize Chaquopy (if needed) and call your Python function.[2][6][1]
+
+```kotlin
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Start Python runtime once
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
+
+        val py = Python.getInstance()
+        val module = py.getModule("myscript")          // myscript.py
+        val result = module.callAttr("greet", "AQARIONS").toString()
+
+        // Use result in your UI (e.g., log or TextView)
+        println(result) // "Hello from Python, AQARIONS!"
+    }
+}
+```
+
+From here you can expand to more complex Python logic, including NumPy/SciPy, ML models, or custom packages you added via the `pip` section.[2][1]
+
+***
+
+## 7. Sync and build
+
+- Click **Sync Now** in Android Studio after Gradle changes.
+- Build and run on your device (e.g., Samsung A15).  
+If Gradle sync fails, double‑check:
+
+- Chaquopy plugin version matches the docs.  
+- `maven { url = uri("https://chaquo.com/maven-test") }` is under `pluginManagement.repositories` (or equivalent).[1][3]
+- `chaquopy {}` block is at the module level, not nested inside `android {}`.
+
+***
+
+## 8. Next step for AQARIONS
+
+Once this basic setup works:
+
+- Move your Python logic into a dedicated module (e.g., `aqarions_tools.py`).
+- Wrap Python calls in Koog tools, as shown earlier, so your Kotlin/Koog agent can decide when to call Python.
+- Optionally, connect a WebView HTML UI that sends commands to your Kotlin layer, which in turn may route some tasks to Python.
+
+This way, Chaquopy becomes a clean, well‑integrated “Python tools engine” inside your Kotlin/Koog-based AQARIONS app.
+
+Citations:
+[1] Chaquopy – Python SDK for Android https://chaquo.com/chaquopy/
+[2] Chaquopy: Using Python In Android Apps - droidcon https://www.droidcon.com/2023/03/30/chaquopy-using-python-in-android-apps/
+[3] I want to make a Kotlin to Python call using Chaquopy in Android studio https://stackoverflow.com/questions/77457257/i-want-to-make-a-kotlin-to-python-call-using-chaquopy-in-android-studio
+[4] chaquo/chaquopy - the Python SDK for Android - GitHub https://github.com/chaquo/chaquopy
+[5] Problems with build.gradle file when trying to integrate chaquopy into Android Studio Jellyfish https://stackoverflow.com/questions/78474175/problems-with-build-gradle-file-when-trying-to-integrate-chaquopy-into-android-s
+[6] How to use Chaquopy to run Python Code and obtain its output ... https://ourcodeworld.com/articles/read/1656/how-to-use-chaquopy-to-run-python-code-and-obtain-its-output-using-java-in-your-android-app
+[7] Chaquopy - APK Download for Android | Aptoide https://chaquopy-demo.en.aptoide.com/app
+[8] Android Studio中集成Chaquopy的实践与解决方案 https://blog.csdn.net/m0_62153576/article/details/146109504
+[9] GitHub - vmitro/chaquopy-experimental: Chaquopy: the Python SDK for Android -*- experimental Python 3.10 / Android 31 build envoronment -*- https://github.com/vmitro/chaquopy-experimental
+[10] chaquopy | Flutter package https://pub.dev/packages/chaquopy
+[11] OPENCV Chaquopy Integration: 2025 WORKING on Android! https://www.youtube.com/watch?v=hxXIuiHLubU
+usual level build Gradle kits for Colin Android with chaquopypython block, configure python requirements and pip installs for chaquopy, and add charcoalopy plug-in to build.gradle kts with correct version
+
+To use Chaquopy from a **Kotlin (KTS) Android app module**, you need three things:
+
+1. The Chaquopy plugin with the correct version.  
+2. The Chaquopy Maven repo at plugin level.  
+3. A `chaquopy {}` block to configure Python version and `pip` installs.  
+
+Below is a “usual” `build.gradle.kts` for an Android app using Kotlin + Chaquopy.
+
+***
+
+## 1. Top-level `settings.gradle.kts` – add Chaquopy Maven
+
+```kotlin
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://chaquo.com/maven") }      // Chaquopy repository[web:221][web:224]
+    }
+}
+```
+
+(If you see build issues, some guides use `maven-test` while testing; prefer the main URL matching the current docs.)[1][2]
+
+***
+
+## 2. App module `build.gradle.kts` – plugins and Chaquopy block
+
+A typical app module with Kotlin and Chaquopy looks like this:
+
+```kotlin
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("com.chaquo.python") version "15.0.0"   // example; use the latest from docs/repo[web:221][web:224]
+}
+
+android {
+    namespace = "com.example.chaquopydemo"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.chaquopydemo"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
+}
+
+// Chaquopy configuration (KTS, module-level)
+chaquopy {
+    defaultConfig {
+        // Pick a supported Python version (check Chaquopy docs)[web:221][web:219]
+        version = "3.10"
+
+        pip {
+            // Example: core libraries you want available in Python
+            install("numpy")
+            install("requests==2.31.0")
+            // Add more: install("pandas==2.2.0") etc.
+        }
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+
+    // Kotlin coroutines etc. as needed
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+}
+```
+
+Key points for KTS:
+
+- Use the **top-level** `chaquopy {}` block, not the older `python {}` block inside `android {}` (that older style is what causes “unresolved reference: python” and similar errors in KTS).[3][2][4]
+- Use a **concrete plugin version**: check the latest released version on Chaquopy’s site or GitHub (e.g., `15.0.0` above is illustrative; replace with the current one from docs).[5][1]
+
+***
+
+## 3. Configure Python requirements and `pip` installs
+
+The `pip { install(...) }` entries in the `chaquopy` block are where you declare Python dependencies.[3][5]
+
+Example variations:
+
+```kotlin
+chaquopy {
+    defaultConfig {
+        version = "3.10"
+
+        pip {
+            // Single package
+            install("numpy")
+
+            // Specific versions
+            install("pydantic==2.8.2")
+            install("openpyxl==3.1.5")
+
+            // Private or custom index
+            // indexUrl = "https://pypi.org/simple"
+            // extraIndexUrl("https://mycompany-pypi.local/simple")
+        }
+    }
+}
+```
+
+Chaquopy will download and bundle these packages into your APK/AAB at build time.[3][5]
+
+***
+
+## 4. Folder layout and Python modules
+
+Once Gradle is configured:
+
+- Create: `app/src/main/python/`
+- Add files like `aqarions_tools.py`:
+
+```python
+# app/src/main/python/aqarions_tools.py
+
+def analyze(values):
+    if not values:
+        return "no values"
+    avg = sum(values) / len(values)
+    return f"average={avg:.2f}"
+```
+
+Then call from Kotlin via Chaquopy:
+
+```kotlin
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+
+fun runPythonExample(context: Context) {
+    if (!Python.isStarted()) {
+        Python.start(AndroidPlatform(context))
+    }
+    val py = Python.getInstance()
+    val module = py.getModule("aqarions_tools")
+    val result = module.callAttr("analyze", listOf(1, 2, 3, 4, 5)).toString()
+    println(result) // "average=3.00"
+}
+```
+
+This setup matches current Chaquopy usage patterns with Kotlin and KTS and avoids common Gradle/KTS integration pitfalls.[3][2][4]
+
+Citations:
+[1] chaquo/chaquopy - the Python SDK for Android - GitHub https://github.com/chaquo/chaquopy
+[2] Problems with build.gradle file when trying to integrate chaquopy into Android Studio Jellyfish https://stackoverflow.com/questions/78474175/problems-with-build-gradle-file-when-trying-to-integrate-chaquopy-into-android-s
+[3] Chaquopy: Using Python In Android Apps - droidcon https://www.droidcon.com/2023/03/30/chaquopy-using-python-in-android-apps/
+[4] I want to make a Kotlin to Python call using Chaquopy in Android studio https://stackoverflow.com/questions/77457257/i-want-to-make-a-kotlin-to-python-call-using-chaquopy-in-android-studio
+[5] Chaquopy – Python SDK for Android https://chaquo.com/chaquopy/
+show me my aqarion kotlin file
+
+Here is the core AQARION Kotlin agent file assembled from what was outlined, in one place.
+
+```kotlin
+package com.example.aqarions
+
+import android.content.Context
+import android.os.Build
+import ai.koog.agents.AIAgent
+import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.features.persistence.FilePersistenceStorageProvider
+import ai.koog.agents.features.persistence.Persistence
+import ai.koog.prompt.executor.simpleOpenAIExecutor
+import ai.koog.prompt.models.openai.OpenAIModels
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.File
+
+// ----------------------
+// Local tools
+// ----------------------
+
+class DeviceStatusTool(private val context: Context) : Tool {
+    override val name: String = "device_status"
+    override val description: String =
+        "Returns information about the Android device (manufacturer, model, SDK)."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any {
+        val model = Build.MODEL
+        val manu = Build.MANUFACTURER
+        val sdk = Build.VERSION.SDK_INT
+        return "Device: $manu $model, SDK $sdk"
+    }
+}
+
+class NotesTool(private val context: Context) : Tool {
+    override val name: String = "notes"
+    override val description: String =
+        "Save and list short notes on device. Use action='add' or 'list'."
+
+    private val file: File
+        get() = File(context.filesDir, "notes.txt")
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any =
+        withContext(Dispatchers.IO) {
+            when (arguments["action"]) {
+                "add" -> {
+                    val text = (arguments["text"] as? String)?.trim().orEmpty()
+                    if (text.isNotEmpty()) {
+                        file.appendText(text + "\n")
+                        "Note saved."
+                    } else {
+                        "No text provided."
+                    }
+                }
+                "list" -> {
+                    if (!file.exists()) {
+                        "No notes yet."
+                    } else {
+                        file.readLines().joinToString(separator = "; ")
+                    }
+                }
+                else -> "Unknown action. Use action='add' or 'list'."
+            }
+        }
+}
+
+// ----------------------
+// Python tool (Chaquopy)
+// ----------------------
+
+class PythonHeavyComputeTool(private val context: Context) : Tool {
+    override val name: String = "python_heavy_compute"
+    override val description: String =
+        "Runs a Python function heavy_compute(values=[...]) and returns a summary."
+
+    override suspend fun invoke(arguments: Map<String, Any?>): Any =
+        withContext(Dispatchers.Default) {
+            if (!Python.isStarted()) {
+                Python.start(AndroidPlatform(context))
+            }
+            val py = Python.getInstance()
+            val module = py.getModule("aqarions_tools")
+
+            val values = arguments["values"] as? List<Number> ?: emptyList()
+            val json = JSONObject().apply {
+                put("values", values.map { it.toDouble() })
+            }.toString()
+
+            module.callAttr("heavy_compute", json).toString()
+        }
+}
+
+// ----------------------
+// AQARIONS Koog agent
+// ----------------------
+
+fun createAqaAgent(context: Context, apiKey: String): AIAgent {
+    val tools = ToolRegistry().apply {
+        register(DeviceStatusTool(context))
+        register(NotesTool(context))
+        register(PythonHeavyComputeTool(context))
+    }
+
+    val checkpointDir = File(context.filesDir, "koog-checkpoints").apply { mkdirs() }
+
+    return AIAgent(
+        promptExecutor = simpleOpenAIExecutor(apiKey, temperature = 0.2),
+        systemPrompt = """
+            You are AQARIONS, an on-device assistant running on this Android phone.
+            You can:
+            - Inspect the device via the 'device_status' tool.
+            - Save and list notes via the 'notes' tool.
+            - Analyze numeric arrays via the 'python_heavy_compute' tool.
+            Rules:
+            - Keep answers under three sentences.
+            - Clearly summarize what you did and what you found.
+        """.trimIndent(),
+        llmModel = OpenAIModels.Chat.GPT4o,
+        toolRegistry = tools
+    ) {
+        install(Persistence) {
+            storage = FilePersistenceStorageProvider(checkpointDir)
+            enableAutomaticPersistence = true
+        }
+    }
+}
+```
+
+This single file is the “AQARION Kotlin” core:
+
+- Defines three tools (device, notes, Python).  
+- Creates a Koog `AIAgent` with continuous file-based persistence on Android.[1][2]
+
+Citations:
+[1] Agent Persistence - Koog https://docs.koog.ai/agent-persistence/
+[2] JetBrains/koog: Koog is the official Kotlin framework for ... - GitHub https://github.com/JetBrains/koog
+

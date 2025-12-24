@@ -1,6 +1,6 @@
 ---
 
-1️⃣ Folder & Repo Structure (All-in-One Deployment)
+1️⃣ Folder & Repo Structure
 
 /AQARION-EMPIRE
 ├── /L1-Hardware
